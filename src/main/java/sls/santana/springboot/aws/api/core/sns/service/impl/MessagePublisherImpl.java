@@ -36,7 +36,7 @@ public class MessagePublisherImpl implements MessagePublisher {
 
     @Override
     public String publish(Message message) throws JsonProcessingException {
-        PublishRequest publishRequest = new PublishRequest(awsProperties.getTopicArn(),createJson(message), "Notification: Network connectivity issue");
+        PublishRequest publishRequest = new PublishRequest(awsProperties.getTopicArn(),createJson(message), "Notification: Encontro Tech Consorcio");
         PublishResult response = snsClient.publish(publishRequest);
         return "Mensagem enviada com sucesso sucesso";
     }

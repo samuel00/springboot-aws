@@ -1,5 +1,6 @@
 package sls.santana.springboot.aws.api.controller;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -66,7 +67,8 @@ public class MessageControllerIT {
     @BeforeEach
     void setup() throws IOException, InterruptedException {
         MockitoAnnotations.openMocks(this);
-        MessageController messageController = new MessageController(new MessagePublisherImpl(this.amazonSNS, this.awsProperties));
+        CreateTopicResult createTopicResult = amazonSNS.createTopic(TOPICO);
+        MessageController messageController = new MessageController(new MessagePublisherImpl( this.amazonSNS, this.awsProperties));
         mockMvc = MockMvcBuilders.standaloneSetup(messageController).build();
         when(this.awsProperties.getRegion()).thenReturn("us-east-1");
         localStack.execInContainer("awslocal", "sns", "create-topic", "--name", TOPICO);
@@ -74,15 +76,19 @@ public class MessageControllerIT {
     }
 
     @TestConfiguration
-
     static class AwsConfig {
 
         @Bean(name = "amazonSNS")
         @Profile("test")
         public AmazonSNSClient amazonSNS() throws IOException, InterruptedException {
-            return (AmazonSNSClient) AmazonSNSClient.builder()
+            return  (AmazonSNSClient) AmazonSNSClient.builder()
                     .withEndpointConfiguration(localStack.getEndpointConfiguration(SNS))
-                    .withCredentials(credentialsProvider())
+                    .withClientConfiguration(
+                            new ClientConfiguration()
+                                    .withMaxErrorRetry(10)
+                                    .withConnectionTimeout(10_1000)
+                                    .withSocketTimeout(10_000)
+                                    .withTcpKeepAlive(true))
                     .build();
         }
 
@@ -93,7 +99,6 @@ public class MessageControllerIT {
 
     @Test
     public void should_send_message_to_topic_sns() throws Exception {
-        amazonSNS.createTopic(TOPICO);
         this.mockMvc.perform(post("/publish")
                 .content(createJson())
                 .contentType(MediaType.APPLICATION_JSON))

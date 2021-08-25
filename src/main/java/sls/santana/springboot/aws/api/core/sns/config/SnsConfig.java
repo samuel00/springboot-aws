@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 
 import java.net.URI;
 
@@ -23,9 +24,19 @@ public class SnsConfig {
     public static final String SECRET_KEY = "asdf";
     public static final String ACCESS_KEY = "asdf";
 
+    @Profile("local")
     @Bean(name = "snsClient")
     @Primary
     public AmazonSNSClient snsClient() {
+        return (AmazonSNSClient) AmazonSNSClientBuilder.standard()
+                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("http://localhost:4566", this.awsProperties.getRegion()))
+                .build();
+    }
+
+    @Profile("cloud")
+    @Bean(name = "snsClient")
+    @Primary
+    public AmazonSNSClient snsClientCloud() {
         return (AmazonSNSClient) AmazonSNSClientBuilder.standard()
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("http://localhost:4566", this.awsProperties.getRegion()))
                 .build();
